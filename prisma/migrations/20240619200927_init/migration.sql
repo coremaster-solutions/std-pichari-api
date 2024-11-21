@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "Role" ADD VALUE 'REGISTRATION_CONTROL';
+
+-- AlterTable
+ALTER TABLE "tracking_documents" ALTER COLUMN "statusProcedure" SET DEFAULT 'PENDING_RECEPTION';

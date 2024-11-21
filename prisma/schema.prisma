@@ -1,0 +1,382 @@
+// This is your Prisma schema file,
+// learn more about it in the docs https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+enum StatusPersonal {
+  ACTIVE
+  INACTIVE
+}
+
+enum DocumentTypeId {
+  DNI
+  RUC
+  CEX
+  PASAPORTE
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum StatusProcedure {
+  PENDING_RECEPTION
+  ATTENDED_DERIVED
+  IN_PROGRESS
+  OBSERVED
+  ARCHIVED
+}
+
+enum StatusSend {
+  SEND
+  UNSEND
+}
+
+enum OfficeType {
+  MANAGEMENT
+  OFFICE
+  SUB_MANAGEMENT
+  PROJECT
+}
+
+enum DocumentTypeCategory {
+  INTERNAL
+  EXTERNAL
+}
+
+enum AttachmentType {
+  DOCUMENT
+  TRACKING_DOCUMENT
+}
+
+enum ArchivistType {
+  OFFICE
+  PERSONAL
+}
+
+enum Role {
+  PART_OF_TABLE
+  ADMIN
+  IT
+  REGISTRATION_CONTROL
+}
+
+model Personal {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String         @unique
+  username        String         @unique
+  firstName       String
+  first_lastName  String
+  second_lastName String
+  documentType    DocumentTypeId
+  documentNumber  String         @unique @db.VarChar(12)
+  password        String
+  birthdate       DateTime
+  address         String
+  civilStatus     String
+  ubigeo          String?
+  phone           String?
+  cellphone       String?
+  avatarUrl       String?
+  position        String?
+  status          StatusPersonal @default(ACTIVE)
+  documents       Document[]     @relation("CreatorPersonal")
+
+  trackingOriginPersonals  TrackingDocument[] @relation("TrackingOriginPersonal")
+  trackingDestinyPersonals TrackingDocument[] @relation("TrackingDestinyPersonal")
+
+  personalOffices PersonalsOffices[] @relation("PersonalOffice")
+
+  offices       Office[]       @relation("CreatorOffice")
+  documentTypes DocumentType[] @relation("CreatorDocumentType")
+
+  rucNumber        String?
+  role             Role      @default(PART_OF_TABLE)
+  positionOptional String?
+  firstLoginAt     DateTime?
+  groupOffices OfficeGroup[] @relation("PersonalOfficeGroup")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([documentType, documentNumber])
+  @@map("personals")
+}
+
+model DocumentType {
+  id       String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String
+  status   Status                @default(ACTIVE)
+  category DocumentTypeCategory? @default(INTERNAL)
+
+  creatorId String?   @db.Uuid
+  creator   Personal? @relation("CreatorDocumentType", fields: [creatorId], references: [id])
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime?  @updatedAt
+  documents Document[]
+
+  @@unique([name, category])
+  @@map("document_types")
+}
+
+model Office {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String  @unique
+  description String?
+  status      Status  @default(ACTIVE)
+
+  creatorId String?   @db.Uuid
+  creator   Personal? @relation("CreatorOffice", fields: [creatorId], references: [id])
+
+  officeType OfficeType? @default(MANAGEMENT)
+
+  nextDocumentNumbers Json?
+
+  createdAt DateTime           @default(now())
+  updatedAt DateTime?          @updatedAt
+  personals PersonalsOffices[] @relation("OfficePersonal")
+
+  trackingOriginOffices  TrackingDocument[] @relation("TrackingOriginOffice")
+  trackingDestinyOffices TrackingDocument[] @relation("TrackingDestinyOffice")
+  groups     OfficeGroup[] @relation("OfficeGroup")
+
+  parentOfficeId String? @unique @db.Uuid
+  parentOffice   Office? @relation("ParentOffice", fields: [parentOfficeId], references: [id])
+  subOffice      Office? @relation("ParentOffice")
+
+  @@map("offices")
+}
+
+model Document {
+  id                    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procedureNumber       String
+  documentNumber        String
+  folioNumber           Int
+  issue                 String
+  documentUrl           String
+  attachmentDocumentUrl String?
+
+  documentType   DocumentType? @relation(fields: [documentTypeId], references: [id])
+  documentTypeId String?       @db.Uuid
+
+  citizen   Citizen? @relation(fields: [citizenId], references: [id])
+  citizenId String?  @db.Uuid
+
+  statusSend StatusSend? @default(UNSEND)
+
+  creator   Personal? @relation("CreatorPersonal", fields: [creatorId], references: [id])
+  creatorId String?   @db.Uuid
+
+  trackings TrackingDocument[] @relation("TrackingDocument")
+
+  procedureType   String?
+  shippingAverage String?
+
+  documentDate DateTime? @default(now())
+
+  archivist   Archivist? @relation("ArchivistDocument", fields: [archivistId], references: [id], onDelete: Cascade)
+  archivistId String?    @db.Uuid
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([procedureNumber, documentNumber, documentTypeId, creatorId])
+  @@unique([documentNumber, documentTypeId, citizenId])
+  @@map("documents")
+}
+
+model TrackingDocument {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procedureNumber String?
+  statusProcedure StatusProcedure @default(PENDING_RECEPTION)
+
+  document   Document? @relation("TrackingDocument", fields: [documentId], references: [id])
+  documentId String?   @db.Uuid
+
+  originOffice     Office?   @relation("TrackingOriginOffice", fields: [originOfficeId], references: [id])
+  originOfficeId   String?   @db.Uuid
+  originPersonal   Personal? @relation("TrackingOriginPersonal", fields: [originPersonalId], references: [id])
+  originPersonalId String?   @db.Uuid
+
+  receivedDate            DateTime         @default(now())
+  destinyOffice           Office?          @relation(name: "TrackingDestinyOffice", fields: [destinyOfficeId], references: [id])
+  destinyOfficeId         String?          @db.Uuid
+  destinyPersonal         Personal?        @relation(name: "TrackingDestinyPersonal", fields: [destinyPersonalId], references: [id])
+  destinyPersonalId       String?          @db.Uuid
+  message                 String?
+  attentionPriority       String?
+  sentDestinations        Json?
+  copyDerivation          Boolean?         @default(false)
+  derivedData             Json?
+  previousStatusProcedure StatusProcedure?
+  previousMessage         String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@map("tracking_documents")
+}
+
+model AttachmentFile {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  fileUrl String?
+
+  entityId   String?         @db.Uuid
+  entityType AttachmentType?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@map("attachment_files")
+}
+
+model Citizen {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentType   DocumentTypeId
+  documentNumber String
+  fullName       String
+  phone          String         @db.VarChar(9)
+  email          String
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime?  @updatedAt
+  documents Document[]
+
+  @@unique([documentType, documentNumber])
+  @@map("citizens")
+}
+
+model Archivist {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String?
+  description String?
+  default     Boolean? @default(false)
+
+  documents  Document[]     @relation("ArchivistDocument")
+  entityId   String?        @db.Uuid
+  entityType ArchivistType?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([name, entityId])
+  @@map("archivists")
+}
+
+model Notification {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  personalId String  @db.Uuid
+  officeId   String? @db.Uuid
+  data       Json
+
+  readAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@map("notifications")
+}
+
+model OrganizationChart {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityName String
+  data       Json
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@map("organization_charts")
+}
+
+model PersonalsOffices {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  personal   Personal? @relation("PersonalOffice", fields: [personalId], references: [id], onDelete: Cascade)
+  personalId String    @db.Uuid
+  office     Office?   @relation("OfficePersonal", fields: [officeId], references: [id], onDelete: Cascade)
+  officeId   String    @db.Uuid
+  isMain     Boolean   @default(false)
+  position   String?
+
+  @@map("personals_offices")
+}
+
+model Group {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String @unique
+
+  permissions GroupPermission[]  @relation("GroupPermission")
+  offices     OfficeGroup[] @relation("GroupOffice")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@map("groups")
+}
+
+model Permission {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  value       String @unique
+  description String
+
+  groups GroupPermission[] @relation("PermissionGroup")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@map("permissions")
+}
+
+model GroupPermission {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  group        Group      @relation("GroupPermission", fields: [groupId], references: [id], onDelete: Cascade)
+  groupId      String     @db.Uuid
+  permission   Permission @relation("PermissionGroup", fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId String     @db.Uuid
+
+  @@map("group_permissions")
+}
+
+model OfficeGroup {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  group        Group      @relation("GroupOffice", fields: [groupId], references: [id], onDelete: Cascade)
+  groupId      String     @db.Uuid
+  office   Office @relation("OfficeGroup", fields: [officeId], references: [id], onDelete: Cascade)
+  officeId String     @db.Uuid
+  personal   Personal? @relation("PersonalOfficeGroup", fields: [personalId], references: [id], onDelete: Cascade)
+  personalId String?     @db.Uuid
+  previousDataPersonal Json?
+  personalIdToReturn String?
+
+  @@map("office_groups")
+}
+
+enum StatusSignDocument {
+  INITIAL
+  CANCELED
+  PENDING
+  ERROR
+  SIGNED
+}
+
+model SignLog {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status      StatusSignDocument @default(INITIAL)
+  provider    String
+  documentUrl String
+  dataResponse Json
+
+  @@map("sign_logs")
+} 

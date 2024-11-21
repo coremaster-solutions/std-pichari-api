@@ -1,0 +1,13 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+dist
+
+tmp/
+uploads/
+
+.wwebjs_auth/
+*session.json
+
+.wwebjs_cache/
