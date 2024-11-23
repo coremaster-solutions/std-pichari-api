@@ -990,6 +990,7 @@ export class DocumentPrismaRepository implements IDocumentRepository {
         perPage,
         lastPage,
         currentPage: page,
+        total,
       } as IPaginationMeta,
     };
   }

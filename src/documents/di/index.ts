@@ -31,6 +31,7 @@ import {
   GetAllDocumentReportService,
   GetAllDocumentService,
   GetAllDocumentServiceMe,
+  GetAllDocumentSharedService,
   GetLastCorrelativeNumberDocumentService,
   GetOneDocumentService,
   GetOneDocumentWithAllTrackingsService,
@@ -219,6 +220,11 @@ export const returnProcedureService = new ReturnProcedureService(
   prismaTrackingDocumentRepository
 );
 
+const getAllDocumentSharedService = new GetAllDocumentSharedService(
+  prismaDocumentRepository,
+  prismaPersonalRepository
+);
+
 export const documentsController = new DocumentsController(
   createDocumentService,
   getAllDocumentService,
@@ -243,7 +249,8 @@ export const documentsController = new DocumentsController(
   unarchiveProcedureService,
   getYearSummaryCountDashboardBarGraphicDocumentsByStatusService,
   shareDocumentByEmailsService,
-  returnProcedureService
+  returnProcedureService,
+  getAllDocumentSharedService
 );
 
 export const reportsController = new ReportsController(

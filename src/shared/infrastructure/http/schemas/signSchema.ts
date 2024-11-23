@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const signCreateResponseBodySchema = z.object({
   documentUrl: z.string().url(),
-  positionPersonal: z.string().min(5),
+  positionPersonal: z.string().min(4),
   signatureReason: z.string().min(5),
   stampUrl: z.string().url().optional(),
   signatureStyle: z.number().min(1).max(4).optional(),

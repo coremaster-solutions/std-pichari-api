@@ -10,7 +10,7 @@ export function proceduresPDF(
   dataCallback: any,
   endCallback: any
 ) {
-  let doc = new PDFDocument({ margin: 50, layout: "landscape", size: "A4" });
+  let doc = new PDFDocument({ margin: 20, layout: "landscape", size: "A4" });
 
   doc.on("data", dataCallback);
   doc.on("end", endCallback);
@@ -40,10 +40,16 @@ function generateProcedureTable(
   );
   generateHr(doc, proceduresTableTop + 20);
   doc.font("Helvetica");
-
   for (i = 0; i < procedures.length; i++) {
+    let position = i;
+    if (position > 600) {
+      doc.addPage();
+      position = 0;
+    } else {
+      position = proceduresTableTop + (position + 1) * 30;
+    }
     const item = procedures[i];
-    const position = proceduresTableTop + (i + 1) * 30;
+    // let position = proceduresTableTop + (i + 1) * 30;
     generateTableRow(
       doc,
       position,
@@ -59,6 +65,11 @@ function generateProcedureTable(
     );
 
     generateHr(doc, position + 25);
+
+    // if (position > 740) {
+    //   doc.addPage();
+    //   position = 0;
+    // }
   }
 
   doc.font("Helvetica");

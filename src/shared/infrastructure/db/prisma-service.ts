@@ -1,5 +1,32 @@
 import { PrismaClient } from "@prisma/client";
 
+export const prisma = new PrismaClient({
+  log: [
+    {
+      emit: "event",
+      level: "query",
+    },
+    {
+      emit: "stdout",
+      level: "error",
+    },
+    {
+      emit: "stdout",
+      level: "info",
+    },
+    {
+      emit: "stdout",
+      level: "warn",
+    },
+  ],
+});
+
+prisma.$on("query", (e) => {
+  console.log("Query: " + e.query);
+  console.log("Params: " + e.params);
+  console.log("Duration: " + e.duration + "ms");
+});
+
 export class PrismaService extends PrismaClient {
   constructor() {
     super();
@@ -32,7 +59,24 @@ export const getPaginationLinks = async ({
   const pageQuery = Number(page) || 1;
 
   const offsetSkip = (pageQuery - 1) * perPageQuery;
-  const lastPage = Math.round(modelTotal / perPageQuery) || 1;
+  const getDecimalLastPage = String((modelTotal / perPageQuery).toFixed(2))
+    .split(".")
+    .at(1);
+  const isGreater =
+    (getDecimalLastPage &&
+      Number(getDecimalLastPage) > 0 &&
+      Number(getDecimalLastPage) < 50 &&
+      perPageQuery < modelTotal) ||
+    false;
 
-  return { offsetSkip, lastPage, perPage: perPageQuery, page: pageQuery };
+  const lastPage = Math.round(modelTotal / perPageQuery) || 1;
+  console.log("getDecimalLastPage", Number(getDecimalLastPage));
+  console.log("lastPage", lastPage);
+
+  return {
+    offsetSkip,
+    lastPage: isGreater ? lastPage + 1 : lastPage,
+    perPage: perPageQuery,
+    page: pageQuery,
+  };
 };

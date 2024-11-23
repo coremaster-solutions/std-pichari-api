@@ -30,7 +30,7 @@ export const personalCreateBodySchema = z.object({
   rucNumber: z.string().min(11).optional(),
   status: z.nativeEnum(StatusPersonalEnum).optional(),
   officeId: z.string().uuid({ message: "Obligatorio" }),
-  position: z.string(),
+  position: z.string().min(4),
 });
 
 export const personalUpdateBodySchema = z.object({

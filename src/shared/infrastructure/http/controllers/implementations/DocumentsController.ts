@@ -11,6 +11,7 @@ import {
   GetAllDocumentPendingAndDerivedService,
   GetAllDocumentService,
   GetAllDocumentServiceMe,
+  GetAllDocumentSharedService,
   GetLastCorrelativeNumberDocumentService,
   GetOneDocumentService,
   GetOneDocumentWithAllTrackingsService,
@@ -68,9 +69,27 @@ export class DocumentsController extends BaseController {
     private unarchiveProcedureService: UnarchiveProcedureService,
     private getSummaryCountDashboardBarGraphicDocumentsYearByStatusService: GetYearSummaryCountDashboardBarGraphicDocumentsByStatusService,
     private shareDocumentByEmailsService: ShareDocumentByEmailsService,
-    private returnProcedureService: ReturnProcedureService
+    private returnProcedureService: ReturnProcedureService,
+    private getAllDocumentSharedService: GetAllDocumentSharedService
   ) {
     super();
+  }
+
+  async findAllShared(req: Request, res: Response): Promise<any> {
+    try {
+      const query = req.query as any;
+      const personalId = (req as RequestUser).userId;
+      const documents = await this.getAllDocumentSharedService.execute({
+        ...query,
+        personalId,
+      });
+
+      return this.ok(res, documents);
+    } catch (error) {
+      if (error instanceof AppError) {
+        return this.badRequest(res, error.message);
+      }
+    }
   }
 
   async returnProcedure(req: Request, res: Response): Promise<any> {

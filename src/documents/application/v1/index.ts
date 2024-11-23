@@ -31,3 +31,4 @@ export * from "./GetYearSummaryCountDashboardBarGraphicDocumentsByStatusService"
 export * from "./ShareDocumentByEmailsService";
 export * from "./SendEmailShareDocumentService";
 export * from "./ReturnProcedureService";
+export * from "./GetAllDocumentSharedService";

@@ -91,6 +91,13 @@ export class DocumentsRoute {
     );
 
     this.router.get(
+      "/shared",
+      [isAuthenticate],
+      (req: Request, res: Response) =>
+        documentsController.findAllShared(req, res)
+    );
+
+    this.router.get(
       "/me",
       [isAuthenticate, validateSchema({ query: documentGetAllQuerySchema })],
       (req: Request, res: Response) => documentsController.findAllMe(req, res)
