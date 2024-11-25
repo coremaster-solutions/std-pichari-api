@@ -9,6 +9,7 @@ import * as Mustache from "mustache";
 import path from "path";
 import { StatusDocumentEnum } from "../../domain/enum";
 import { IDocumentRepository } from "../../domain/repositories";
+import { statusProcedureEs } from "@/documents/locale";
 const options: HtmlPdf.Options = {
   format: "A4",
   landscape: true,
@@ -131,7 +132,11 @@ export class PdfGetAllDocumentService {
         date: new Date().toLocaleDateString("es-PE"),
         documents: response?.map(({ trackings, ...doc }) => ({
           ...doc,
-          tracking: trackings.at(0),
+          tracking: {
+            ...trackings.at(0),
+            statusProcedure:
+              statusProcedureEs[trackings.at(0)?.statusProcedure ?? "ARCHIVED"],
+          },
         })),
       };
 
