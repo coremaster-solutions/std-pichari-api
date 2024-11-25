@@ -141,12 +141,12 @@ export class PdfGetAllDocumentService {
               ...tracking,
               statusProcedure:
                 statusProcedureEs[tracking?.statusProcedure ?? "ARCHIVED"],
-              destinyPersonal: {
-                ...tracking?.destinyPersonal,
-                fullName: tracking?.destinyPersonal
-                  ? getFullName(tracking?.destinyPersonal!)
-                  : "Recepción pendiente",
-              },
+              destinyPersonal: tracking?.destinyPersonal
+                ? {
+                    ...tracking?.destinyPersonal,
+                    fullName: getFullName(tracking?.destinyPersonal!),
+                  }
+                : "Recepción pendiente",
             },
           };
         }),
