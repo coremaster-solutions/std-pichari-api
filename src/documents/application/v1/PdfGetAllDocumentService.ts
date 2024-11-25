@@ -10,6 +10,7 @@ import path from "path";
 import { StatusDocumentEnum } from "../../domain/enum";
 import { IDocumentRepository } from "../../domain/repositories";
 import { statusProcedureEs } from "@/documents/locale";
+import { getFullName } from "@/personals/utils";
 const options: HtmlPdf.Options = {
   format: "A4",
   landscape: true,
@@ -130,14 +131,25 @@ export class PdfGetAllDocumentService {
         title: "Reporte de trámites",
         logo: Envs.STAMP_URL,
         date: new Date().toLocaleDateString("es-PE"),
-        documents: response?.map(({ trackings, ...doc }) => ({
-          ...doc,
-          tracking: {
-            ...trackings.at(0),
-            statusProcedure:
-              statusProcedureEs[trackings.at(0)?.statusProcedure ?? "ARCHIVED"],
-          },
-        })),
+        documents: response?.map(({ trackings, ...doc }) => {
+          const tracking = trackings.at(0);
+          return {
+            ...doc,
+            subject:
+              tracking && tracking.message ? tracking.message : doc.issue,
+            tracking: {
+              ...tracking,
+              statusProcedure:
+                statusProcedureEs[tracking?.statusProcedure ?? "ARCHIVED"],
+              destinyPersonal: {
+                ...tracking?.destinyPersonal,
+                fullName: tracking?.destinyPersonal
+                  ? getFullName(tracking?.destinyPersonal!)
+                  : "Recepción pendiente",
+              },
+            },
+          };
+        }),
       };
 
       const renderedHtml = Mustache.render(template, data);

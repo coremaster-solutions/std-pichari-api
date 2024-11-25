@@ -30,12 +30,19 @@
         width: 100%;
       }
       .logo {
-        width: 100px;
-        height: 100px;
+        width: 80px;
+        height: 80px;
       }
       .fecha {
         margin-left: auto;
         float: right;
+      }
+      h1,
+      h4,
+      h5,
+      h6,
+      p {
+        margin: 0;
       }
     </style>
   </head>
@@ -49,17 +56,27 @@
     <table>
       <thead>
         <tr>
-          <th>#</th>
-          <th>Número de trámite</th>
-          <th>Número de documento</th>
+          <th>N° de documento</th>
+          <th>N° de trámite</th>
+          <th>Oficina y personal actual</th>
+          <th>Asunto</th>
+          <th>Estado</th>
         </tr>
       </thead>
       <tbody>
         {{#documents}}
         <tr>
-          <td>{{@index + 1}}</td>
-          <td>{{procedureNumber}}</td>
-          <td>{{tracking.procedureNumber}}</td>
+          <td>{{documentNumber}}</td>
+          <td>
+            <p>Inicial: {{procedureNumber}}</p>
+            <h4>Actual: {{tracking.procedureNumber}}</h4>
+          </td>
+          <td>
+            <p>{{tracking.destinyOffice.name}}</p>
+            <h4>{{tracking.destinyPersonal.fullName}}</h4>
+          </td>
+          <td>{{subject}}</td>
+          <td>{{tracking.statusProcedure}}</td>
         </tr>
         {{/documents}} {{^documents}}Sin registros para este
         reporte{{/documents}}
