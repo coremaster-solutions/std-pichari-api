@@ -4,8 +4,8 @@ import {
 } from "@/documents/application/v1";
 import { AppError } from "@/shared/domain/models";
 import { Request, Response } from "express";
+import fs from "fs";
 import { BaseController } from "../../models";
-import { proceduresPDF } from "@/documents/templates/reports/procedure-list-pdf";
 
 export class ReportsController extends BaseController {
   constructor(
@@ -31,25 +31,21 @@ export class ReportsController extends BaseController {
 
   async pdfProceduresReport(req: Request, res: Response): Promise<any> {
     try {
-      const filename = `${new Date()
+      const filename = `${new Date().getTime()}-${new Date()
         .toLocaleDateString("es", {
           timeZone: "America/Lima",
         })
         .replace(/\//g, "-")}-reporte-tramites`;
 
-      const stream = res.writeHead(200, {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename=${filename}.pdf`,
-      });
-      const documents = await this.pdfGetAllDocumentService.execute(req.query);
+      const pdfBuffer = await this.pdfGetAllDocumentService.execute(req.query);
 
-      proceduresPDF(
-        documents,
-        (chunk: any) => {
-          stream.write(chunk);
-        },
-        () => stream.end()
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}.pdf"`
       );
+
+      res.send(pdfBuffer);
     } catch (error) {
       if (error instanceof AppError) {
         return this.badRequest(res, error.message);

@@ -70,8 +70,6 @@ export const getPaginationLinks = async ({
     false;
 
   const lastPage = Math.round(modelTotal / perPageQuery) || 1;
-  console.log("getDecimalLastPage", Number(getDecimalLastPage));
-  console.log("lastPage", lastPage);
 
   return {
     offsetSkip,
