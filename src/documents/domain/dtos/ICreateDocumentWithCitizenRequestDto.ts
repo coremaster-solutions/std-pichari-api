@@ -8,4 +8,5 @@ export type ICreateDocumentWithCitizenRequestDto =
 
     creatorId?: string;
     originOfficeId?: string;
+    attachments?: string[];
   };

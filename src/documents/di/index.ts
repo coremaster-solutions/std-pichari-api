@@ -66,7 +66,8 @@ const createDocumentCitizenService = new CreateDocumentCitizenService(
   uploadFileProvider,
   jobsProvider,
   prismaNotificationRepository,
-  prismaTrackingDocumentRepository
+  prismaTrackingDocumentRepository,
+  prismaAttachmentFileRepository
 );
 const createDocumentService = new CreateDocumentService(
   prismaDocumentRepository,

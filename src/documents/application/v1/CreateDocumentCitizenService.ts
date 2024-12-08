@@ -1,5 +1,9 @@
+import { IAttachmentFileRepository } from "@/attachment_files/domain/repositories";
 import { ICreateDocumentWithCitizenRequestDto } from "@/documents/domain/dtos";
-import {ProcedureTypeEnum, ShippingAverageEnum} from "@/documents/domain/enum";
+import {
+  ProcedureTypeEnum,
+  ShippingAverageEnum,
+} from "@/documents/domain/enum";
 import { DocumentModel } from "@/documents/domain/models";
 import { IDocumentRepository } from "@/documents/domain/repositories";
 import { NotificationModel } from "@/notifications/domain/models";
@@ -12,6 +16,7 @@ import {
   IUploadFileProvider,
 } from "@/shared/infrastructure/containers";
 import { ITrackingDocumentRepository } from "@/tracking_documents/domain/repositories";
+import { AttachmentType } from "@prisma/client";
 
 export class CreateDocumentCitizenService {
   constructor(
@@ -21,7 +26,8 @@ export class CreateDocumentCitizenService {
     private uploadFileProvider: IUploadFileProvider,
     private jobsProvider: IJobsProvider,
     private notificationRepository: INotificationRepository,
-    private trackingDocumentRepository: ITrackingDocumentRepository
+    private trackingDocumentRepository: ITrackingDocumentRepository,
+    private attachmentFileRepository: IAttachmentFileRepository
   ) {}
 
   async execute({
@@ -30,13 +36,14 @@ export class CreateDocumentCitizenService {
     citizen,
     originOfficeId,
     destinyOfficeId,
+    attachments,
     ...data
   }: ICreateDocumentWithCitizenRequestDto): Promise<any> {
     const documentExists = await this.documentRepository.findByDocumentNumber({
-          documentNumber: data.documentNumber,
-          documentTypeId: data.documentTypeId,
-          shippingAverage: ShippingAverageEnum.TABLE_OF_PARTS
-      });
+      documentNumber: data.documentNumber,
+      documentTypeId: data.documentTypeId,
+      shippingAverage: ShippingAverageEnum.TABLE_OF_PARTS,
+    });
 
     if (documentExists) {
       throw new AppError({
@@ -111,21 +118,48 @@ export class CreateDocumentCitizenService {
       throw new AppError({ message: "Error to moved document file " });
     }
 
-    let newAttachmentDocumentUrl = attachmentDocumentUrl
-      ? await this.uploadFileProvider
-          .moveFileToPath(attachmentDocumentUrl!, destinationDir)
-          .catch((error) => {
-            console.log("ERROR", error);
+    const promiseAttachments =
+      !!attachments && attachments?.length > 0
+        ? Promise.all(
+            attachments?.map(
+              async (file) =>
+                await this.uploadFileProvider.moveFileToPath(
+                  file,
+                  destinationDir
+                )
+            )
+          )
+        : undefined;
 
-            throw new AppError({ message: error.toString() });
-          })
-      : attachmentDocumentUrl;
+    if (!!attachments && attachments?.length > 0 && !promiseAttachments) {
+      throw new AppError({ message: "Error to moved document file " });
+    }
+
+    const newAttachments = await promiseAttachments;
+
+    if (newAttachments && newAttachments?.length > 0) {
+      const promiseAddAttachments = await Promise.all(
+        newAttachments.map(async (path) => {
+          await this.attachmentFileRepository.create({
+            entityId: documentResponse.id,
+            entityType: AttachmentType.DOCUMENT,
+            fileUrl: path,
+          });
+        })
+      );
+      if (
+        !!newAttachments &&
+        newAttachments?.length > 0 &&
+        !promiseAddAttachments
+      ) {
+        throw new AppError({ message: "Error to created attachment files" });
+      }
+    }
 
     const documentUpdateResponse = await this.documentRepository.update(
       documentResponse.id,
       {
         documentUrl: newDocumentUrl,
-        attachmentDocumentUrl: newAttachmentDocumentUrl,
       }
     );
 

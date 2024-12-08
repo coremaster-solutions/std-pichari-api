@@ -1,4 +1,4 @@
-import { StatusDocumentEnum } from "@/documents/domain/enum";
+import { ProcedureTypeEnum, StatusDocumentEnum } from "@/documents/domain/enum";
 import { DocumentTypeIdConst } from "@/personals/domain/enum";
 import { z } from "zod";
 import { onlyNumbersRegex } from "./validationsRegex";
@@ -60,7 +60,7 @@ export const documentWithCitizenCreateBodySchema = z.object({
       .email({ message: "El correo electrónico no es válido" })
       .min(3, "E debe contener al menos 3 caracteres"),
   }),
-  procedureType: z.string().optional(),
+  procedureType: z.nativeEnum(ProcedureTypeEnum),
   shippingAverage: z.string().optional(),
   attentionPriority: z.string().optional(),
 
