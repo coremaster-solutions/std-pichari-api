@@ -48,6 +48,9 @@ enum OfficeType {
   OFFICE
   SUB_MANAGEMENT
   PROJECT
+  MAYOR
+  MUNICIPAL_COUNCIL
+  OTHER
 }
 
 enum DocumentTypeCategory {

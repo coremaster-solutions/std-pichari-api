@@ -23,10 +23,11 @@ export class CreateResponseBySignsPeruService {
     documentUrl,
     positionPersonal,
     signatureReason,
-    stampUrl = Envs.STAMP_URL,
+    stampUrl,
     signatureStyle = 1,
   }: IRequest): Promise<SignLogModel> {
     const token = await this.signsProvider.getToken();
+    console.log("stampUrl", stampUrl);
 
     if (!token) {
       throw new AppError({
@@ -50,7 +51,7 @@ export class CreateResponseBySignsPeruService {
       bachtOperation: false,
       oneByOne: true,
       signatureStyle,
-      imageToStamp: stampUrl,
+      imageToStamp: stampUrl || Envs.STAMP_URL,
       stampTextSize: 14,
       stampWordWrap: 37,
       role: positionPersonal,
