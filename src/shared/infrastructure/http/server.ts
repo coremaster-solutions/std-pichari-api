@@ -128,6 +128,7 @@ export class Server {
     this.app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
     this.app.use("/uploads", express.static("uploads"));
     this.app.use("/tmp", express.static("tmp"));
+    this.app.use("/public", express.static("public"));
     this.app.use("/admin/queues", jobsProvider.adapterRoute());
   }
 
