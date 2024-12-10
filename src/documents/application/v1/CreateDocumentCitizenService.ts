@@ -9,6 +9,7 @@ import { IDocumentRepository } from "@/documents/domain/repositories";
 import { NotificationModel } from "@/notifications/domain/models";
 import { INotificationRepository } from "@/notifications/domain/repositories";
 import { IOfficeRepository } from "@/offices/domain/repositories";
+import { Envs } from "@/shared/config";
 import { AppError } from "@/shared/domain/models";
 import {
   IGenerateRandomNumberProvider,
@@ -51,7 +52,9 @@ export class CreateDocumentCitizenService {
       });
     }
 
-    const officeExists = await this.officeRepository.findById(destinyOfficeId!);
+    const officeExists = await this.officeRepository.findById(
+      destinyOfficeId || Envs.PARTS_TABLE_OFFICE_ID
+    );
 
     if (!officeExists) {
       throw new AppError({

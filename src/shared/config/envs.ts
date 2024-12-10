@@ -21,6 +21,7 @@ const {
   SIGN_PERU_CLIENT_ID,
   SIGN_PERU_CLIENT_SECRET,
   STAMP_URL,
+  PARTS_TABLE_OFFICE_ID,
 } = process.env;
 
 const envSchema = z.object({
@@ -42,6 +43,7 @@ const envSchema = z.object({
   SIGN_PERU_CLIENT_ID: z.string().trim().min(1),
   SIGN_PERU_CLIENT_SECRET: z.string().trim().min(1),
   STAMP_URL: z.string().trim().min(1).url(),
+  PARTS_TABLE_OFFICE_ID: z.string().uuid().trim().min(1),
 });
 
 const envServer = envSchema.safeParse({
@@ -63,6 +65,7 @@ const envServer = envSchema.safeParse({
   SIGN_PERU_CLIENT_ID,
   SIGN_PERU_CLIENT_SECRET,
   STAMP_URL,
+  PARTS_TABLE_OFFICE_ID,
 });
 
 if (!envServer.success) {
