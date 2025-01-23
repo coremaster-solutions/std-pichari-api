@@ -73,53 +73,65 @@ export class OfficePrismaRepository implements IOfficeRepository {
     dateTo,
     status,
   }: IFindAllOffice): Promise<IDataWithPagination<OfficeModel[]>> {
-    const { data, meta } = await paginate(
-      this.db.office,
-      {
-        orderBy: {
-          createdAt: "desc",
-        },
-        where: {
-          ...(term && {
-            OR: [
-              {
-                name: { contains: term, mode: "insensitive" },
-              },
-              {
-                description: { contains: term, mode: "insensitive" },
-              },
-            ],
-          }),
-          ...(status && {
-            OR: [
-              {
-                status: {
-                  in: status?.split(",") as StatusOfficeEnum[],
-                },
-              },
-            ],
-          }),
-          ...(dateFrom &&
-            dateTo && {
+    try {
+      const { data, meta } = await paginate(
+        this.db.office,
+        {
+          orderBy: {
+            createdAt: "desc",
+          },
+          where: {
+            ...(term && {
               OR: [
                 {
-                  createdAt: {
-                    gte: new Date(dateFrom).toISOString(),
-                    lte: new Date(dateTo).toISOString(),
+                  name: { contains: term, mode: "insensitive" },
+                },
+                {
+                  description: { contains: term, mode: "insensitive" },
+                },
+              ],
+            }),
+            ...(status && {
+              OR: [
+                {
+                  status: {
+                    in: status?.split(",") as StatusOfficeEnum[],
                   },
                 },
               ],
             }),
+            ...(dateFrom &&
+              dateTo && {
+                OR: [
+                  {
+                    createdAt: {
+                      gte: new Date(dateFrom).toISOString(),
+                      lte: new Date(dateTo).toISOString(),
+                    },
+                  },
+                ],
+              }),
+          },
+          select: { ...fieldsSelect, personals: false },
         },
-        select: { ...fieldsSelect, personals: false },
-      },
-      {
-        page: page,
-        perPage: perPage,
-      }
-    );
+        {
+          page: page,
+          perPage: perPage,
+        }
+      );
 
-    return { data: data as OfficeModel[], metadata: meta };
+      return { data: data as OfficeModel[], metadata: meta };
+    } catch (error: any) {
+      console.log(`Error DB findAll OFFICES:: ${error.message}`);
+
+      const message = messageMapPrisma[error.code as MessageMapTypePrisma]
+        ? messageMapPrisma[error.code as MessageMapTypePrisma]("La oficina")
+        : "Error en el servidor";
+      throw new AppError({
+        message: message,
+        errorCode: "Error",
+      });
+    }
   }
 
   async create({
