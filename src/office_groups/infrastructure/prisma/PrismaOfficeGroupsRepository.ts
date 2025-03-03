@@ -203,9 +203,11 @@ export class PrismaOfficeGroupsRepository implements IOfficeGroupsRepository {
     personalId,
     personalIdToReturn,
   }: ICreateOfficeGroupsDto): Promise<OfficeGroupModel | null> {
+    console.log(groupId, officeId, personalId, personalIdToReturn);
+
     try {
       await this.db.$queryRawUnsafe(
-        `INSERT INTO office_groups ("groupId","officeId","personalId","personalIdToReturn") VALUES(uuid($1),uuid($2),uuid($3), uuid($4))`,
+        `INSERT INTO office_groups ("groupId","officeId","personalId","personalIdToReturn") VALUES($1::uuid,$2::uuid,$3::uuid, $4::uuid)`,
         groupId,
         officeId,
         personalId,
