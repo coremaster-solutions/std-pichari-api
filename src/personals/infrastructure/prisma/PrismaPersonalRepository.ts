@@ -1,23 +1,23 @@
+import { selectGroup } from "@/groups/domain/models";
+import { selectOfficeGroup } from "@/office_groups/domain/models";
+import { RoleType } from "@/personals/domain/enum";
+import { selectPersonalOffice } from "@/personals_offices/domain/models";
 import { AppError } from "@/shared/domain/models";
 import {
   IDataWithPagination,
   MessageMapTypePrisma,
   TPrismaService,
+  getPaginationLinks,
   messageMapPrisma,
-  paginate,
 } from "@/shared/infrastructure/db";
+import { Prisma } from "@prisma/client";
+import { ICreatePersonalDto, IUpdatePersonalDto } from "../../domain/dtos";
+import { PersonalModel } from "../../domain/models";
 import {
   IFindAllPersonals,
   IPersonalRepository,
   selectAttributePersonal,
 } from "../../domain/repositories";
-import { ICreatePersonalDto, IUpdatePersonalDto } from "../../domain/dtos";
-import { PersonalModel } from "../../domain/models";
-import { Prisma } from "@prisma/client";
-import { selectPersonalOffice } from "@/personals_offices/domain/models";
-import { selectOfficeGroup } from "@/office_groups/domain/models";
-import { selectGroup } from "@/groups/domain/models";
-import { selectGroupPermission } from "@/group_permissions/domain/models";
 
 const fieldsSelect: Prisma.PersonalSelect = {
   id: true,
@@ -81,89 +81,146 @@ export class PrismaPersonalRepository implements IPersonalRepository {
   }
 
   async findAll({
-    page,
-    perPage,
     term,
     role,
     dateFrom,
     dateTo,
     officeId,
     status,
+    ...queryData
   }: IFindAllPersonals): Promise<
     IDataWithPagination<Omit<PersonalModel, "password">[]>
   > {
-    const { data, meta } = await paginate(
-      this.db.personal,
-      {
+    try {
+      const whereList: Prisma.PersonalWhereInput = {
+        ...(term && {
+          OR: [
+            {
+              username: { contains: term, mode: "insensitive" },
+            },
+            {
+              firstName: { contains: term, mode: "insensitive" },
+            },
+            {
+              first_lastName: { contains: term, mode: "insensitive" },
+            },
+            {
+              second_lastName: { contains: term, mode: "insensitive" },
+            },
+            {
+              documentNumber: { contains: term, mode: "insensitive" },
+            },
+            {
+              email: { contains: term, mode: "insensitive" },
+            },
+            {
+              address: { contains: term, mode: "insensitive" },
+            },
+            {
+              ubigeo: { contains: term, mode: "insensitive" },
+            },
+            {
+              personalOffices: {
+                some: {
+                  OR: [
+                    { position: { contains: term, mode: "insensitive" } },
+                    {
+                      office: {
+                        OR: [
+                          { name: { contains: term, mode: "insensitive" } },
+                          {
+                            description: {
+                              contains: term,
+                              mode: "insensitive",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        }),
+        ...(officeId && {
+          OR: [
+            {
+              personalOffices: { some: { officeId } },
+            },
+          ],
+        }),
+        ...(status && {
+          AND: [{ status }],
+        }),
+        ...(role && {
+          role: { in: role.split(",") as RoleType[] },
+        }),
+        ...(dateFrom &&
+          dateTo && {
+            OR: [
+              {
+                createdAt: {
+                  gte: new Date(dateFrom).toISOString(),
+                  lte: new Date(dateTo).toISOString(),
+                },
+              },
+            ],
+          }),
+      };
+      const total = await this.db.personal.count({
+        where: whereList,
+      });
+      const { offsetSkip, perPage, lastPage, page } = await getPaginationLinks({
+        query: queryData,
+        modelTotal: total,
+      });
+
+      const data = await this.db.personal.findMany({
+        where: whereList,
+        select: fieldsSelect,
+        take: perPage || undefined,
+        skip: offsetSkip || undefined,
         orderBy: {
           createdAt: "desc",
         },
-        where: {
-          ...(term && {
-            OR: [
-              {
-                username: { contains: term, mode: "insensitive" },
-              },
-              {
-                firstName: { contains: term, mode: "insensitive" },
-              },
-              {
-                first_lastName: { contains: term, mode: "insensitive" },
-              },
-              {
-                second_lastName: { contains: term, mode: "insensitive" },
-              },
-              {
-                documentNumber: { contains: term, mode: "insensitive" },
-              },
-              {
-                email: { contains: term, mode: "insensitive" },
-              },
-              {
-                office: {
-                  name: { contains: term, mode: "insensitive" },
-                },
-              },
-            ],
-          }),
-          ...(officeId && {
-            OR: [
-              {
-                personalOffices: { some: { officeId } },
-              },
-            ],
-          }),
-          ...(status && {
-            AND: [{ status }],
-          }),
-          // array values some
-          // ...(role && {
-          //   role: { hasSome: role.split(",") },
-          // }),
-          ...(role && {
-            role: { in: role.split(",") },
-          }),
-          ...(dateFrom &&
-            dateTo && {
-              OR: [
-                {
-                  createdAt: {
-                    gte: new Date(dateFrom).toISOString(),
-                    lte: new Date(dateTo).toISOString(),
-                  },
-                },
-              ],
-            }),
-        },
-        select: fieldsSelect,
-      },
-      {
-        page: page,
-        perPage: perPage,
-      }
-    );
+      });
 
-    return { data: data as PersonalModel[], metadata: meta };
+      return {
+        data: data as PersonalModel[],
+        metadata: {
+          total,
+          perPage,
+          currentPage: page,
+          lastPage,
+        },
+      };
+      // const { data, meta } = await paginate(
+      //   this.db.personal,
+      //   {
+      //     orderBy: {
+      //       createdAt: "desc",
+      //     },
+      //     where:
+      //     select: fieldsSelect,
+      //   },
+      //   {
+      //     page: page,
+      //     perPage: perPage,
+      //   }
+      // );
+
+      // return { data: data as PersonalModel[], metadata: meta };
+    } catch (error: any) {
+      console.log(error);
+
+      const message =
+        messageMapPrisma[error.code as MessageMapTypePrisma]("El personal");
+      throw new AppError({
+        message: message,
+        errorCode: "Error",
+      });
+    }
   }
 
   async create({
