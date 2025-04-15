@@ -26,7 +26,11 @@ export const documentCreateAdminBodySchema = z.object({
   documentDate: z.string(),
 
   destinyOfficeId: z.string().uuid().optional(),
-  messageDerivation: z.string().optional(),
+  messageDerivation: z
+    .string()
+    .min(5, "El mensaje debe contener al menos 5 caracteres")
+    .max(200, "El mensaje debe contener como máximo 200 caracteres")
+    .optional(),
   copyDerivation: z.boolean(),
   sentDestinations: z.array(sentDestination).optional(),
 });
@@ -105,7 +109,7 @@ export const deriveProcedureBodySchema = z.object({
   destinyOfficeId: z.string().uuid(),
   messageDerivation: z
     .string()
-    .min(15, "El mensaje debe contener al menos 15 caracteres")
+    .min(5, "El mensaje debe contener al menos 5 caracteres")
     .max(200, "El mensaje debe contener como máximo 200 caracteres")
     .optional(),
   sentDestinations: z.array(sentDestination).optional(),
