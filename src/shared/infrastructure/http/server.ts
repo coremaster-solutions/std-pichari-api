@@ -19,11 +19,8 @@ export const optionsCorsGlobal = {
   origin: [
     "*",
     "http://localhost:3000",
-    "https://www.coremaster.dev",
-    "https://coremaster.dev",
+    "https://std-staging.coremaster.dev",
     "https://std-pichari.coremaster.dev",
-    "https://max-demo.site",
-    "https://wwww.max-demo.site",
   ],
   credentials: true,
 };
