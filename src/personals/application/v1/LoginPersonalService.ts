@@ -35,14 +35,16 @@ export class LoginPersonalService {
     username,
     password: passwordInput,
   }: IRequest): Promise<IServiceResponse<DataResponse>> {
+    console.log("LoginPersonalService BODY::: ", username, passwordInput);
     const personal = await this.personalRepository.findByUsername(username);
+
+    console.log("LoginPersonalService personal::: ", personal);
 
     if (!personal) {
       throw new AppError({
         message: messageInvalidCredentials,
       });
     }
-
     if (personal.status === StatusPersonalEnum.INACTIVE) {
       throw new AppError({
         message:
@@ -54,6 +56,8 @@ export class LoginPersonalService {
       passwordInput,
       personal.password
     );
+
+    console.log("LoginPersonalService passwordValid::: ", passwordValid);
 
     if (!passwordValid) {
       throw new AppError({
@@ -67,7 +71,7 @@ export class LoginPersonalService {
 
     const token = await this.jwtProvider.sign(dataPersonal, "4h");
     const refresh_token = await this.jwtProvider.sign(dataPersonal, "6h");
-
+    console.log("LoginPersonalService Successful::: ", token);
     return {
       message: "Successful",
       code: "000000",
